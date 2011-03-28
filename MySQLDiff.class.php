@@ -2,11 +2,8 @@
 /**
  * MySQLDiff
  * 
- * @package   
- * @author 
- * @copyright Nabeel Shahzad
- * @version 2011
- * @access public
+ * @package MySQLDiff
+ * @author Nabeel Shahzad <https://github.com/nshahzad/MySQLDiff>
  */
 class MySQLDiff {
     
@@ -17,7 +14,6 @@ class MySQLDiff {
     protected $xml;
     
     protected $missingCols = array();
-    
     
     /**
      * MySQLDiff::construct()
@@ -119,7 +115,6 @@ class MySQLDiff {
                 $sql = array();    
                 
                 $sql[] = 'ALTER TABLE `'.$tableName.'` ADD';
-                
                 $sql[] = $this->getColumnLine($column);
                 
                 if($column['prevField'] === null) {
@@ -190,7 +185,7 @@ class MySQLDiff {
     }
     
     /**
-     * MySQLDiff::getIndexLine()
+     * Create an ALTER TABLE to create indexes
      * 
      * @param mixed $index
      * @return
