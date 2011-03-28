@@ -7,7 +7,8 @@
  */
 class MySQLDiff {
     
-    public $xml_errors;
+    public $xml_errors = array();
+    public $sql_errors = array();
     
     protected $params;
     protected $db;
@@ -45,11 +46,16 @@ class MySQLDiff {
             throw new Exception("Could not select database {$this->params['dbname']}");
         }
         
+        
+        if(!file_exists($this->params['dumpxml'])) {
+            throw new Exception("XML File \"{$this->params['dumpxml']}\" does not exist!");
+        }
+        
         # Load the XML file
         libxml_use_internal_errors (true);
         $this->xml = simplexml_load_file($this->params['dumpxml']);
         if($this->xml === false) {
-            $this->xml_errors = implode("\n", libxml_get_errors());
+            #$this->xml_errors = implode("\n", libxml_get_errors());
             throw new Exception ("Errors in XML File: {$this->xml_errors}");
         }
     }
@@ -230,8 +236,11 @@ class MySQLDiff {
             #}
             
             if(mysql_errno() != 0) {
-                echo "Error: ".mysql_error()."\n";
-                echo "Query: $sql\n";
+                $this->sql_errors[] = array(
+                    'sql' => $sql,
+                    'errno' => mysql_errno(),
+                    'error' => mysql_error()
+                );
             }
         }
         
@@ -319,8 +328,8 @@ class MySQLDiff {
                 $keyName = strtolower(trim($tablekey['Key_name']));
                 
                 $found = false;
-        		foreach($indexes as $index) {  		            
-        			if($index->Key_name == $keyName) {
+        		foreach($indexes as $index) {  		   
+        			if(strtolower(trim($index->Key_name)) == $keyName) {
         				$found = true;
         				break;
         			}
