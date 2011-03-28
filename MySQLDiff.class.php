@@ -91,9 +91,9 @@ class MySQLDiff {
 
             $sql = array();
             $sql[] = 'CREATE TABLE `'.$table['Name'].'` (';
-            
+                        
             $colList = array();
-            foreach($missingCols['columns'][$table['Name']] as $column) {
+            foreach($diffData['columns'][$table['Name']] as $column) {
                 $colList[] = $this->getColumnLine($column);
             }
             
@@ -189,6 +189,12 @@ class MySQLDiff {
         return implode(' ', $sql);
     }
     
+    /**
+     * MySQLDiff::getIndexLine()
+     * 
+     * @param mixed $index
+     * @return
+     */
     protected function getIndexLine($index) {
         $sql = array();
         
@@ -224,8 +230,13 @@ class MySQLDiff {
         
         foreach ($sqlList as $sql) {
             $res = mysql_query($sql, $this->db);
-            if(!$res) {
-                throw new Exception(mysql_errno().': '.mysql_error());
+            #if(!$res) {
+            #    throw new Exception(mysql_errno().': '.mysql_error());
+            #}
+            
+            if(mysql_errno() != 0) {
+                echo "Error: ".mysql_error()."\n";
+                echo "Query: $sql\n";
             }
         }
         
@@ -302,12 +313,14 @@ class MySQLDiff {
             # Find any missing indexes
             $indexes = array();
             $res = mysql_query('SHOW INDEXES IN '.$tableName);
-            while($index = mysql_fetch_object($res)) {
-                $indexes[] = $index;
+            if($res) {
+                while($index = mysql_fetch_object($res)) {
+                    $indexes[] = $index;
+                }
             }
             
             foreach($table->key as $tablekey) {
-                                
+                
                 $keyName = strtolower(trim($tablekey['Key_name']));
                 
                 $found = false;
