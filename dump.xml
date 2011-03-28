@@ -6,7 +6,7 @@
 		<field Field="name" Type="varchar(25)" Null="NO" Key="" Extra="" />
 		<field Field="active" Type="tinyint(1)" Null="NO" Key="" Default="1" Extra="" />
 		<key Table="testtable" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
-		<options Name="testtable" Engine="MyISAM" Version="10" Row_format="Dynamic" Rows="0" Avg_row_length="0" Data_length="0" Max_data_length="281474976710655" Index_length="1024" Data_free="0" Auto_increment="1" Create_time="2011-03-28 13:52:24" Update_time="2011-03-28 13:52:24" Collation="latin1_swedish_ci" Create_options="" Comment="" />
+		<options Name="testtable" Engine="MyISAM" Version="10" Row_format="Dynamic" Rows="0" Avg_row_length="0" Data_length="0" Max_data_length="281474976710655" Index_length="1024" Data_free="0" Auto_increment="1" Create_time="2011-03-28 17:32:06" Update_time="2011-03-28 17:32:06" Collation="utf8_bin" Create_options="" Comment="" />
 	</table_structure>
 </database>
 </mysqldump>
