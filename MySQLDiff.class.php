@@ -75,15 +75,15 @@ class MySQLDiff {
      */
     public function getSQLDiffs() {
         
-        $missingCols = $this->findDiffs();
-        if(count($missingCols) == 0) {
-            return $missingCols;
+        $diffData = $this->findDiffs();
+        if(count($diffData) == 0) {
+            return $diffData;
         }
         
         $sqlList = array();
         
         # Add tables...
-        foreach($missingCols['tables'] as $table) {
+        foreach($diffData['tables'] as $table) {
             
             if(count($table) == 0) { # This table exists...
                 continue;
@@ -106,13 +106,13 @@ class MySQLDiff {
             $sql[] = 'COLLATE '.$table['Collation'];
             
             # Remove it from the columns list
-            unset($missingCols['columns'][$table['Name']]);
+            unset($diffData['columns'][$table['Name']]);
             
             $sqlList[] = implode(' ',$sql).';';
         }    
         
         # Now add columns....    
-        foreach($missingCols['columns'] as $tableName => $columnList) {
+        foreach($diffData['columns'] as $tableName => $columnList) {
                 
             foreach($columnList as $columnName => $column) {
                             
@@ -129,6 +129,19 @@ class MySQLDiff {
                 }
                 
                 $sqlList[] = trim(implode(' ', $sql)).';';
+            }
+        }
+        
+        
+        # Now create the SQL for generating indexes
+        foreach($diffData['indexes'] as $tableName => $indexes) {
+            
+            if(count($indexes) == 0) {
+                continue;
+            }
+            
+            foreach($indexes as $index) {
+                $sqlList[] = $this->getIndexLine($index);
             }
         }
         
@@ -168,10 +181,35 @@ class MySQLDiff {
             $key = strtolower(trim($column['Key']));
             if($key == 'pri') {
                 $sql[] = 'PRIMARY KEY';
-            }
+            }/* elseif($key =='uni') {
+                $sql[] = 'UNIQUE';
+            }*/
         }
         
         return implode(' ', $sql);
+    }
+    
+    protected function getIndexLine($index) {
+        $sql = array();
+        
+        $sql[] = 'ALTER TABLE `'.$index['Table'].'` ADD';
+        
+        if($index['Key_name'] == 'PRIMARY') {
+            $sql[] = 'PRIMARY KEY ('.$index['Column_name'].')';
+        } else {
+            if($index['Non_unique'] == '0') {
+                $sql[] = 'UNIQUE';
+            } else {
+                #$sql[] = $index['Index_type'];
+                if(strtolower(trim($index['Index_type'])) == 'fulltext') {
+                    $sql[] = 'FULLTEXT';
+                }
+            }
+            
+            $sql[] = 'INDEX ('.$index['Column_name'].')';
+        }
+        
+        return implode(' ', $sql).';';
     }
     
     
@@ -191,6 +229,7 @@ class MySQLDiff {
             }
         }
         
+        return $sqlList;
     }
     
     /**
@@ -202,11 +241,13 @@ class MySQLDiff {
         
         $this->missingCols = array();
         
+        $this->missingCols['tables'] = array();
+        $this->missingCols['columns'] = array();
+        $this->missingCols['indexes'] = array();
+            
         foreach($this->xml->database->table_structure as $table) {
             
             $tableName = (string) $table['name'];
-            $this->missingCols['tables'] = array();
-            $this->missingCols['columns'] = array();
             
             # Get a list of columns from this table...
         	$desc_result = mysql_query('DESCRIBE '.$tableName, $this->db);
@@ -245,8 +286,7 @@ class MySQLDiff {
         		if($found == false) {
         		  
   		            # Add all attributes in, but not as SimpleXML objects
-  		            $this->missingCols['columns'][$tableName][$fieldName] = array();  
-                  
+  		            $this->missingCols['columns'][$tableName][$fieldName] = array();
   		            foreach($field->attributes() as $key => $value) {
   		                $this->missingCols['columns'][$tableName][$fieldName][$key] = (string) $value;
   		            }
@@ -257,6 +297,37 @@ class MySQLDiff {
                 
                 $prevField = $fieldName;
         	}
+            
+            
+            # Find any missing indexes
+            $indexes = array();
+            $res = mysql_query('SHOW INDEXES IN '.$tableName);
+            while($index = mysql_fetch_object($res)) {
+                $indexes[] = $index;
+            }
+            
+            foreach($table->key as $tablekey) {
+                                
+                $keyName = strtolower(trim($tablekey['Key_name']));
+                
+                $found = false;
+        		foreach($indexes as $index) {  		            
+        			if($index->Key_name == $keyName) {
+        				$found = true;
+        				break;
+        			}
+        		}
+                
+        		if($found == false) {
+                    $this->missingCols['indexes'][$tableName][$keyName] = array();
+                    foreach($tablekey->attributes() as $key => $value) {
+  		                $this->missingCols['indexes'][$tableName][$keyName][$key] = (string) $value;
+  		            }
+                    
+                    $this->missingCols['indexes'][$tableName][$keyName]['table'] = $tableName;
+                }
+                
+            }
         }
         
         return $this->missingCols;

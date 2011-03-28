@@ -43,17 +43,15 @@ if($options['t'] == 'show') {
     } catch(Exception $e) {
         echo $e->getMessage(); exit;
     }
-
-    foreach($diff_lines as $line) {
-        echo $line."\n";
-    }
 } elseif($options['t'] == 'run') {
     try { 
-        $diff->runSQLDiff();
+        $diff_lines = $diff->runSQLDiff();
     } catch(Exception $e) {
         echo $e->getMessage(); exit;
     }
 }
 
-
+foreach($diff_lines as $line) {
+    echo $line."\n";
+}
 
