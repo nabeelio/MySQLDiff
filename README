@@ -76,7 +76,12 @@ Class Usage:
     
     # This generates the SQL and actually runs all of them
     try { 
-        $diff->runSQLDiff();
+        $diff_lines = $diff->runSQLDiff();
+        var_dump($diff_lines);
     } catch(Exception $e) {
         echo $e->getMessage(); exit;
     }
+    
+    
+    
+    
