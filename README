@@ -6,9 +6,13 @@ file, and a database which currently exists. It will tell you the missing
 tables and columns (return as an array), or generate MySQL queries to add the
 missing columns in.
 
+It can also pretty reliably create complete databases based on the XML dump file,
+with indexes. 
 
+
+===================
 Usage:
-
+===================
 
 Generate a MySQL Dump file:
 
@@ -32,7 +36,9 @@ remote server properly).
 
 
 
+===================
 Class Usage:
+===================
 
 $params = array(
     'dbuser' => 'testuser',
