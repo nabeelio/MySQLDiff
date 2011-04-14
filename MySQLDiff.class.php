@@ -288,6 +288,7 @@ class MySQLDiff {
         
         $this->missingCols['tables'] = array();
         $this->missingCols['columns'] = array();
+        $this->missingCols['types'] = array();
         $this->missingCols['indexes'] = array();
             
         foreach($this->xml->database->table_structure as $table) {
