@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 'on');
+echo '<pre>';
 /**
  * MySQLDiff
  * 
@@ -23,12 +26,19 @@ class MySQLDiff {
      * @return
      */
     public function __construct($params) {
-        
+    
         if(!is_array($params)) {
+            throw new Exception("Invalid parameters passed");
             return false;
         }
-        
-        $this->params = $params;
+                
+        $this->params = array_merge(array(
+            'dbuser' => '',
+            'dbpass' => '',
+            'dbname' => '',
+            'dbhost' => '',
+            'dumpxml' => '',
+        ), $params);
         
         # Connect to MySQL
         $this->db = mysql_connect(
@@ -40,15 +50,18 @@ class MySQLDiff {
         
         if(!$this->db) {
             throw new Exception("Could not connect to {$this->params['dbuser']}@{$this->params['dbserver']}");
+            return false;
         }
         
         if(!mysql_select_db($this->params['dbname'], $this->db)) {
             throw new Exception("Could not select database {$this->params['dbname']}");
+            return false;
         }
         
         
         if(!file_exists($this->params['dumpxml'])) {
             throw new Exception("XML File \"{$this->params['dumpxml']}\" does not exist!");
+            return false;
         }
         
         # Load the XML file
@@ -57,6 +70,7 @@ class MySQLDiff {
         if($this->xml === false) {
             #$this->xml_errors = implode("\n", libxml_get_errors());
             throw new Exception ("Errors in XML File: {$this->xml_errors}");
+            return false;
         }
     }
     
@@ -133,6 +147,21 @@ class MySQLDiff {
             }
         }
         
+        # ALTER TABLES for TYPES
+        foreach($diffData['types'] as $tableName => $columnList) {
+                
+            foreach($columnList as $columnName => $column) {
+               
+                $sql = array();    
+                
+                $sql[] = 'ALTER TABLE `'.$tableName.'` CHANGE';
+                $sql[] = '`'.$columnName.'`';
+                $sql[] = $this->getColumnLine($column['newtype']);
+                
+                $sqlList[] = trim(implode(' ', $sql)).';';
+            }
+        }
+        
         
         # Now create the SQL for generating indexes
         foreach($diffData['indexes'] as $tableName => $indexes) {
@@ -189,6 +218,7 @@ class MySQLDiff {
         
         return implode(' ', $sql);
     }
+    
     
     /**
      * Create an ALTER TABLE to create indexes
@@ -276,23 +306,31 @@ class MySQLDiff {
         	} else {
                 # Get list of columns
                 while($column = mysql_fetch_object($desc_result)) {
-                    $columns[] = strtolower(trim($column->Field));
+                    $columns[] = $column;
                 }
             }
-            
-        	
+                    	
         	/* loop through all the columns returned by the above query and all the columns
         		from the fields in the xml file, and make sure they all match up, with the
         		fieldlist from the xml being the "master" outside loop which it looks up against 
              */
             $prevField = null;
         	foreach($table->field as $field) {
-        	   
+        	
                 $fieldName = (string) $field['Field'];
+                $fieldType = (string) $field['Type'];
                 
         		$found = false;
-        		foreach($columns as $column) {  		            
-        			if($column == $fieldName) {
+        		foreach($columns as $column) {  	
+      		  
+        			if($column->Field == $fieldName) {
+        			 
+                        /* Check the column type */
+                        if($column->Type != $fieldType) {
+                            $this->missingCols['types'][$tableName][$fieldName]['oldtype'] = $column;
+                            $this->missingCols['types'][$tableName][$fieldName]['newtype'] = $field;
+                        }
+                        
         				$found = true;
         				break;
         			}
