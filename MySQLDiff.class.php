@@ -314,17 +314,20 @@ class MySQLDiff {
              */
             $prevField = null;
         	foreach($table->field as $field) {
-        	
-                $fieldName = (string) $field['Field'];
-                $fieldType = (string) $field['Type'];
+ 	              
+                $fieldName = strtolower(trim((string) $field['Field']));
                 
         		$found = false;
         		foreach($columns as $column) {  	
-      		  
-        			if($column->Field == $fieldName) {
+        		  
+        			if(strtolower(trim($column->Field)) == $fieldName) {
         			 
-                        /* Check the column type */
-                        if($column->Type != $fieldType) {
+                        /* Check the column type, etc, see if those differ */
+                        if((strtolower(trim($column->Type)) != (string) $field['Type'])
+                            || (strtolower(trim($column->Null)) != strtolower(trim((string) $field['Null'])))
+                            || (strtolower(trim($column->Default)) != strtolower(trim((string) $field['Default'])))
+                            || (strtolower(trim($column->Extra)) != strtolower(trim((string) $field['Extra'])))
+                        ) {
                             $this->missingCols['types'][$tableName][$fieldName]['oldtype'] = $column;
                             $this->missingCols['types'][$tableName][$fieldName]['newtype'] = $field;
                         }
